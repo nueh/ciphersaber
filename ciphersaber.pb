@@ -17,6 +17,41 @@ Procedure usage()
 EndProcedure
 
 
+Procedure.s byte2hex(*buffer, length)
+  ; returns a string containing *buffer's bytes as lowercase hex (aa bb cc dd ...) wrapped after 66 chars
+
+  Protected Dim hexa.s(length)
+  Protected output.s = ""
+
+  For i = 1 To length
+    hexa(i) + Hex(PeekA(*buffer + (i - 1)))
+    hexa(i) = RSet(hexa(i), 2, "0")
+    hexa(i) = LCase(hexa(i))
+    output  = output + hexa(i) + " "
+    If (i % 22) = 0
+      output = output + #CRLF$
+    EndIf
+  Next
+
+  ProcedureReturn output
+EndProcedure
+
+
+Procedure hex2byte(address, hex$)
+  ; converts hex into data.
+  ; By Joakim L. Christiansen a.k.a JLC
+  ; https://github.com/JoakimCh/JLCs_PB_stuff/blob/master/Hex%20library/hexLibrary.pbi
+
+  Protected i, pos, len
+  hex$ = RemoveString(hex$, " ")
+  len  = Len(hex$)
+  For i = 1 To len Step 2
+    PokeB(address + pos, Val("$" + Mid(hex$, i, 2)))
+    pos + 1
+  Next
+EndProcedure
+
+
 Procedure encrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rounds = 20)
 
   ; max key length of 246 bytes
@@ -201,19 +236,31 @@ If TotalSize > 0
 
   If decrypt
     *output = AllocateMemory(length - 10)
-    decrypt(*input, (length), *output, *key, Len(key), rounds)
+    If armored ; TODO: Ascii-armored Text fabriziert beim Entschlüsseln nur Mist!
+      *output      = AllocateMemory(length / 3 - 10)
+      Define *temp = AllocateMemory(MemorySize(*input))
+      hex2byte(*temp, PeekS(*input, length))
+      CopyMemory(*temp, *input, length)
+      decrypt(*input, (length / 3), *output, *key, Len(key), rounds)
+    Else
+      decrypt(*input, (length), *output, *key, Len(key), rounds)
+    EndIf
     WriteConsoleData(*output, MemorySize(*output))
   Else
     *output = AllocateMemory(length + 10)
     encrypt(*input, length, *output, *key, Len(key), rounds)
-    WriteConsoleData(*output, MemorySize(*output))
+    If armored
+      PrintN(byte2hex(*output, MemorySize(*output)))
+    Else
+      WriteConsoleData(*output, MemorySize(*output))
+    EndIf
   EndIf
 EndIf
 ; IDE Options = PureBasic 5.31 (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 209
-; FirstLine = 169
-; Folding = -
+; CursorPosition = 256
+; FirstLine = 216
+; Folding = --
 ; EnableUnicode
 ; EnableXP
 ; Executable = ../bin/ciphersaber
