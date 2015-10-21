@@ -1,9 +1,9 @@
 ﻿; ==============================================================
-; Created on:         6.4.2015
+; Created on:         20.10.2015
 ; App/Lib-Name:       ciphersaber
 ; Author:             Niklas Hennigs
-; Version:            0.1
-; Compiler:           PureBasic 5.31 (MacOS X - x64)
+; Version:            0.2
+; Compiler:           PureBasic 5.40 LTS (MacOS X - x64)
 ; ==============================================================
 
 Macro ciphersaber
@@ -12,9 +12,28 @@ EndMacro
 
 
 Procedure usage()
-  PrintN("Usage: " + ciphersaber + " [-d] [-r rounds] key < infile > outfile")
-  ;   PrintN("")
+  PrintN("Usage:")
+  PrintN("  " + ciphersaber + " [-a|-b] [-d] [-r rounds] <key> < infile > outfile")
+  PrintN("")
+  PrintN("Options:")
+  PrintN("  -a          ASCII armor (Hex, slow but compatible).")
+  PrintN("  -b          ASCII armor (Base64, faster).")
+  PrintN("  -d          Decrypt [Default: Encrypt].")
+  PrintN("  -r rounds   Repetitons of state array mixing loop [Default: 20].")
+  PrintN("  key         Encryption key. Use seven diceware words for 90 bits of entropy.")
+  PrintN("")
+  PrintN("See:")
+  PrintN("  http://ciphersaber.gurus.org/faq.html")
+  PrintN("  http://diceware.com")
 EndProcedure
+
+
+CompilerSelect #PB_Compiler_OS
+  CompilerCase #PB_OS_Windows
+  #NEWLINE = #CRLF$
+  CompilerDefault
+  #NEWLINE = #LF$
+CompilerEndSelect
 
 
 Procedure.s byte2hex(*buffer, length)
@@ -29,7 +48,7 @@ Procedure.s byte2hex(*buffer, length)
     hexa(i) = LCase(hexa(i))
     output  = output + hexa(i) + " "
     If (i % 22) = 0
-      output = output + #CRLF$
+      output = output + #NEWLINE
     EndIf
   Next
 
@@ -37,18 +56,23 @@ Procedure.s byte2hex(*buffer, length)
 EndProcedure
 
 
-Procedure hex2byte(address, hex$)
+Procedure.q hex2byte(address, hex$)
   ; converts hex into data.
   ; By Joakim L. Christiansen a.k.a JLC
   ; https://github.com/JoakimCh/JLCs_PB_stuff/blob/master/Hex%20library/hexLibrary.pbi
 
   Protected i, pos, len
   hex$ = RemoveString(hex$, " ")
+  hex$ = RemoveString(hex$, Chr(9)) ; TAB
+  hex$ = RemoveString(hex$, #CR$)
+  hex$ = RemoveString(hex$, #LF$)
   len  = Len(hex$)
   For i = 1 To len Step 2
     PokeB(address + pos, Val("$" + Mid(hex$, i, 2)))
     pos + 1
   Next
+
+  ProcedureReturn pos - 1
 EndProcedure
 
 
@@ -197,7 +221,9 @@ Define rounds  = 20
 Define armored = 0
 
 For i = 0 To argc
-  If ProgramParameter(i) = "-d"
+  If ProgramParameter(i) = "-a"
+    armored = 1
+  ElseIf ProgramParameter(i) = "-d"
     decrypt = 1
   ElseIf ProgramParameter(i) = "-r"
     i      = i + 1
@@ -236,16 +262,16 @@ If TotalSize > 0
 
   If decrypt
     *output = AllocateMemory(length - 10)
-    If armored ; TODO: Ascii-armored Text fabriziert beim Entschlüsseln nur Mist!
-      *output      = AllocateMemory(length / 3 - 10)
+    If armored
+      *output      = AllocateMemory(length / 2) ; ausgedacht, Hauptsache etwas weniger als input-Länge, um Speicher zu sparen.
       Define *temp = AllocateMemory(MemorySize(*input))
-      hex2byte(*temp, PeekS(*input, length))
+      length = hex2byte(*temp, PeekS(*input, length, #PB_Ascii))
       CopyMemory(*temp, *input, length)
-      decrypt(*input, (length / 3), *output, *key, Len(key), rounds)
+      decrypt(*input, (length), *output, *key, Len(key), rounds)
     Else
       decrypt(*input, (length), *output, *key, Len(key), rounds)
     EndIf
-    WriteConsoleData(*output, MemorySize(*output))
+    WriteConsoleData(*output, length - 10)
   Else
     *output = AllocateMemory(length + 10)
     encrypt(*input, length, *output, *key, Len(key), rounds)
@@ -256,13 +282,12 @@ If TotalSize > 0
     EndIf
   EndIf
 EndIf
-; IDE Options = PureBasic 5.31 (MacOS X - x64)
+; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 256
-; FirstLine = 216
+; CursorPosition = 15
 ; Folding = --
 ; EnableUnicode
 ; EnableXP
-; Executable = ../bin/ciphersaber
+; Executable = ../../bin/ciphersaber
 ; CompileSourceDirectory
 ; Debugger = Standalone
