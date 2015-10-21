@@ -271,7 +271,7 @@ If TotalSize > 0
     Else
       decrypt(*input, (length), *output, *key, Len(key), rounds)
     EndIf
-    WriteConsoleData(*output, length - 10)
+    WriteConsoleData(*output, length - 9)
   Else
     *output = AllocateMemory(length + 10)
     encrypt(*input, length, *output, *key, Len(key), rounds)
@@ -284,7 +284,8 @@ If TotalSize > 0
 EndIf
 ; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 15
+; CursorPosition = 273
+; FirstLine = 242
 ; Folding = --
 ; EnableUnicode
 ; EnableXP
