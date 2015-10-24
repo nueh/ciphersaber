@@ -4,7 +4,7 @@ From the [CipherSaber FAQ](http://ciphersaber.gurus.org/faq.html):
 
 ### "What is CipherSaber?"
 
-CipherSaber is an ultra-simple encryption method. Anyone with a little programming skill can write a CipherSaber program in as few as 16 lines of Basic. You can find out how at: http://ciphersaber.gurus.com
+CipherSaber is an ultra-simple encryption method. Anyone with a little programming skill can write a CipherSaber program in as few as 16 lines of Basic. You can find out how at: http://ciphersaber.gurus.org
 
 ### "Is CipherSaber a serious proposal or are you just trying to make a point?"
 
