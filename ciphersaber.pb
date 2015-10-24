@@ -1,10 +1,15 @@
 ﻿; ==============================================================
-; Created on:         6.4.2015
+; Created on:         24.10.2015
 ; App/Lib-Name:       ciphersaber
 ; Author:             Niklas Hennigs
-; Version:            0.1
+; Version:            0.3
 ; Compiler:           PureBasic 5.31 (MacOS X - x64)
 ; ==============================================================
+
+ImportC ""
+  readpassphrase(*prompt, *buf, bufsize.i, flags.i)
+EndImport
+
 
 Macro ciphersaber
   GetFilePart(ProgramFilename())
@@ -12,8 +17,17 @@ EndMacro
 
 
 Procedure usage()
-  PrintN("Usage: " + ciphersaber + " [-d] [-r rounds] key < infile > outfile")
-  ;   PrintN("")
+  PrintN("Usage:")
+  PrintN("  " + ciphersaber + " [-d] [-r rounds] [< infile] [> outfile]")
+  PrintN("")
+  PrintN("Options:")
+  PrintN("  -d         Decrypt [Default: Encrypt].")
+  PrintN("  -r rounds  Repetitons of state array mixing loop [Default: 20].")
+  PrintN("  -h         Show this help text.")
+  PrintN("")
+  PrintN("See:")
+  PrintN("  http://ciphersaber.gurus.org/faq.html")
+  PrintN("  http://diceware.com")
 EndProcedure
 
 
@@ -145,11 +159,10 @@ Procedure decrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
 EndProcedure
 
 
-OpenConsole()
-
 Define argc = CountProgramParameters()
 
-If argc < 1 Or argc > 4
+If argc > 2
+  OpenConsole()
   usage()
   CloseConsole()
   End 1
@@ -157,24 +170,34 @@ EndIf
 
 Define key.s   = ""
 Define *key
+Define *passbuf
 Define decrypt = 0
 Define rounds  = 20
 Define armored = 0
 
 For i = 0 To argc
-  If ProgramParameter(i) = "-d"
+  If ProgramParameter(i) = "-h"
+    OpenConsole()
+    usage()
+    CloseConsole()
+    End 1
+  ElseIf ProgramParameter(i) = "-d"
     decrypt = 1
   ElseIf ProgramParameter(i) = "-r"
     i      = i + 1
     rounds = Val(ProgramParameter(i))
-  ElseIf key = ""
-    key = ProgramParameter(i)
   EndIf
 Next
 
 
-*key        = AllocateMemory(Len(key))
-PokeS(*key, key, -1, #PB_Ascii | #PB_String_NoZero)
+*passbuf = AllocateMemory(250)
+*key = AllocateMemory(250)
+
+*key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+
+keylen = StringByteLength(PeekS(*key))
+
+OpenConsole()
 
 ConsoleError("rounds = " + Str(rounds))
 
@@ -201,21 +224,20 @@ If TotalSize > 0
 
   If decrypt
     *output = AllocateMemory(length - 10)
-    decrypt(*input, (length), *output, *key, Len(key), rounds)
+    decrypt(*input, length, *output, *key, keylen, rounds)
     WriteConsoleData(*output, MemorySize(*output))
   Else
     *output = AllocateMemory(length + 10)
-    encrypt(*input, length, *output, *key, Len(key), rounds)
+    encrypt(*input, length, *output, *key, keylen, rounds)
     WriteConsoleData(*output, MemorySize(*output))
   EndIf
 EndIf
-; IDE Options = PureBasic 5.31 (MacOS X - x64)
+; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 209
-; FirstLine = 169
+; CursorPosition = 230
+; FirstLine = 189
 ; Folding = -
-; EnableUnicode
 ; EnableXP
-; Executable = ../bin/ciphersaber
+; Executable = ../../bin/ciphersaber
 ; CompileSourceDirectory
-; Debugger = Standalone
+; Debugger = IDE
