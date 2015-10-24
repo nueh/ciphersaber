@@ -6,6 +6,7 @@
 ; Compiler:           PureBasic 5.40 LTS (MacOS X - x64)
 ; ==============================================================
 
+
 Macro ciphersaber
   GetFilePart(ProgramFilename())
 EndMacro
@@ -36,6 +37,53 @@ CompilerSelect #PB_Compiler_OS
 CompilerEndSelect
 
 
+Enumeration ;endians
+  ;http://en.wikipedia.org/wiki/Endianness
+  ;http://forums.purebasic.com/english/viewtopic.php?p=294231
+  #littleEndian ;right to left
+  #bigEndian ;left to right
+EndEnumeration
+
+
+Procedure.l getHexSize(hex$) ;no point to use if you got a brain
+  hex$ = RemoveString(hex$," ")
+  ProcedureReturn Len(hex$)/2
+EndProcedure
+
+
+Procedure.s memoryToHex(address,length,byteorder=#bigEndian) ;returns a string containing the hex representation of the memory area
+  Protected result$, i
+  If byteorder = #bigEndian
+    For i=0 To length-1
+      result$ + RSet(Hex(PeekB(address+i),#PB_Byte),2,"0")+""
+    Next
+  ElseIf byteorder = #littleEndian
+    For i=length-1 To 0 Step -1
+      result$ + RSet(Hex(PeekB(Address+i),#PB_Byte),2,"0")+""
+    Next
+  EndIf
+  ProcedureReturn RTrim(result$)
+EndProcedure
+
+
+Procedure hexToMemory(address,hex$,byteorder=#bigEndian) ;converts hex into data
+  Protected i, pos, len
+  hex$ = RemoveString(hex$," ")
+  len = Len(hex$)
+  If byteorder = #bigEndian
+    For i=1 To len Step 2
+      PokeB(address+pos,Val("$"+Mid(hex$,i,2)))
+      pos+1
+    Next
+  ElseIf byteorder = #littleEndian
+    For i=len - 1 To 0 Step -2
+      PokeB(Address+pos,Val("$"+Mid(hex$,i,2)))
+      pos+1
+    Next
+  EndIf
+EndProcedure
+
+
 Procedure.s byte2hex(*buffer, length)
   ; returns a string containing *buffer's bytes as lowercase hex (aa bb cc dd ...) wrapped after 66 chars
 
@@ -46,6 +94,7 @@ Procedure.s byte2hex(*buffer, length)
     hexa(i) + Hex(PeekA(*buffer + (i - 1)))
     hexa(i) = RSet(hexa(i), 2, "0")
     hexa(i) = LCase(hexa(i))
+    output  = output + hexa(i)
     output  = output + hexa(i) + " "
     If (i % 22) = 0
       output = output + #NEWLINE
@@ -233,7 +282,6 @@ For i = 0 To argc
   EndIf
 Next
 
-
 *key        = AllocateMemory(Len(key))
 PokeS(*key, key, -1, #PB_Ascii | #PB_String_NoZero)
 
@@ -263,20 +311,22 @@ If TotalSize > 0
   If decrypt
     *output = AllocateMemory(length - 10)
     If armored
-      *output      = AllocateMemory(length / 2) ; ausgedacht, Hauptsache etwas weniger als input-Länge, um Speicher zu sparen.
-      Define *temp = AllocateMemory(MemorySize(*input))
-      length = hex2byte(*temp, PeekS(*input, length, #PB_Ascii))
-      CopyMemory(*temp, *input, length)
-      decrypt(*input, (length), *output, *key, Len(key), rounds)
+      *output      = AllocateMemory(length) ;
+      Define *temp = AllocateMemory(getHexSize(PeekS(*input, length, #PB_Ascii)))
+;       length       = hex2byte(*temp, PeekS(*input, length, #PB_Ascii))      
+      hexToMemory(*temp, PeekS(*input, length, #PB_Ascii))
+      CopyMemory(*temp, *input, MemorySize(*temp))
+      decrypt(*input, MemorySize(*temp), *output, *key, Len(key), rounds)
     Else
-      decrypt(*input, (length), *output, *key, Len(key), rounds)
+      decrypt(*input, length, *output, *key, Len(key), rounds)
     EndIf
-    WriteConsoleData(*output, length - 9)
+    WriteConsoleData(*output, length - 10)
   Else
     *output = AllocateMemory(length + 10)
     encrypt(*input, length, *output, *key, Len(key), rounds)
     If armored
-      PrintN(byte2hex(*output, MemorySize(*output)))
+;       PrintN(byte2hex(*output, MemorySize(*output)))
+      PrintN(memoryToHex(*output, MemorySize(*output)))
     Else
       WriteConsoleData(*output, MemorySize(*output))
     EndIf
@@ -284,10 +334,8 @@ If TotalSize > 0
 EndIf
 ; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 273
-; FirstLine = 242
+; CursorPosition = 8
 ; Folding = --
-; EnableUnicode
 ; EnableXP
 ; Executable = ../../bin/ciphersaber
 ; CompileSourceDirectory
