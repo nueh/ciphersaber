@@ -3,12 +3,23 @@
 ; App/Lib-Name:       ciphersaber
 ; Author:             Niklas Hennigs
 ; Version:            0.3
-; Compiler:           PureBasic 5.31 (MacOS X - x64)
+; Compiler:           PureBasic 5.40 (MacOS X - x64)
 ; ==============================================================
 
-ImportC ""
-  readpassphrase(*prompt, *buf, bufsize.i, flags.i)
-EndImport
+CompilerSelect #PB_Compiler_OS
+  CompilerCase #PB_OS_MacOS
+  ImportC ""
+    readpassphrase(prompt.p-UTF8, *buf, bufsize.i, flags.i)
+  EndImport
+  CompilerCase #PB_OS_Linux
+  ;    CAVE: getpass() is limited to 128 bytes! Use readpassphrase() instead.
+  ImportC ""
+    getpass(prompt.p-UTF8)
+  EndImport
+  ;     ImportC "-lbsd"
+  ;       readpassphrase(prompt.p-UTF8, *buf, bufsize.i, flags.i)
+  ;     EndImport
+CompilerEndSelect
 
 
 Macro ciphersaber
@@ -161,7 +172,7 @@ EndProcedure
 
 Define argc = CountProgramParameters()
 
-If argc > 2
+If argc > 3
   OpenConsole()
   usage()
   CloseConsole()
@@ -190,10 +201,17 @@ For i = 0 To argc
 Next
 
 
-*passbuf = AllocateMemory(250)
-*key = AllocateMemory(250)
+*key     = AllocateMemory(250)
 
-*key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+CompilerSelect #PB_Compiler_OS
+  CompilerCase #PB_OS_MacOS
+  *passbuf = AllocateMemory(250)
+  *key     = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+  CompilerCase #PB_OS_Linux
+  ; *passbuf = AllocateMemory(250)
+  ; *key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+  *key = getpass("Passphrase? ")
+CompilerEndSelect
 
 keylen = StringByteLength(PeekS(*key))
 
@@ -234,9 +252,10 @@ If TotalSize > 0
 EndIf
 ; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
 ; ExecutableFormat = Console
-; CursorPosition = 230
-; FirstLine = 189
+; CursorPosition = 14
+; FirstLine = 207
 ; Folding = -
+; EnableUnicode
 ; EnableXP
 ; Executable = ../../bin/ciphersaber
 ; CompileSourceDirectory
