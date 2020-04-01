@@ -201,7 +201,7 @@ For i = 0 To argc
 Next
 
 
-*key     = AllocateMemory(250)
+*key = AllocateMemory(250)
 
 CompilerSelect #PB_Compiler_OS
   CompilerCase #PB_OS_MacOS
@@ -209,7 +209,7 @@ CompilerSelect #PB_Compiler_OS
   *key     = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
   CompilerCase #PB_OS_Linux
   ; *passbuf = AllocateMemory(250)
-  ; *key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+  ; *key     = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
   *key = getpass("Passphrase? ")
 CompilerEndSelect
 
@@ -250,13 +250,3 @@ If TotalSize > 0
     WriteConsoleData(*output, MemorySize(*output))
   EndIf
 EndIf
-; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
-; ExecutableFormat = Console
-; CursorPosition = 14
-; FirstLine = 207
-; Folding = -
-; EnableUnicode
-; EnableXP
-; Executable = ../../bin/ciphersaber
-; CompileSourceDirectory
-; Debugger = IDE

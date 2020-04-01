@@ -1,0 +1,40 @@
+.Dd 2020-01-01
+.Dt CIPHERSABER 1
+.Os Darwin
+.Sh NAME
+.Nm ciphersaber
+.Nd a simple symmetric encryption tool based on RC4.
+.Sh SYNOPSIS
+.Nm
+.Op Fl d
+.Op Fl r Ar rounds
+.Op < infile
+.Op > outfile
+.Nm
+.Op Fl h
+.Sh OPTIONS
+.Bl -tag -width indent
+.It Fl d
+Decrypt [default: Encrypt].
+.It Fl r Ar rounds
+Specify number of
+.Ar rounds
+of mixing i.e repetitons of state array mixing loop [default: 20].
+Use
+.Fl r Ar 1
+for compatibility with Ciphersaber-1.
+.It Fl h
+Show help text.
+.El
+.Sh DESCRIPTION
+.Nm
+is a simple symmetric encryption protocol based on the RC4 stream cipher. Its
+goals are both technical and political: it gives reasonably strong protection
+of message confidentiality, yet it's designed to be simple enough that even
+novice programmers can memorize the algorithm and implement it from scratch.
+.Sh EXAMPLES
+.Sh SEE ALSO
+.Bl -tag -width indent
+.It http://ciphersaber.gurus.org/faq.html
+.It http://world.std.com/~reinhold/diceware.html
+.El
