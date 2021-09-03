@@ -236,8 +236,8 @@ Until ReadSize = 0 ; once 0 is returned, there is nothing else to read
 ; --------------------- read input from stdin
 
 If TotalSize > 0
-  Define length            = TotalSize
-  Define *input            = *Buffer
+  Define length = TotalSize
+  Define *input = *Buffer
   Define *output
 
   If decrypt
