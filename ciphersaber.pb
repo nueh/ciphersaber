@@ -83,7 +83,7 @@ Procedure encrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
   j = 0
   For n = 1 To rounds ; 20 ist Standardwert von Ciphersaber-2, 10 wurde für die Testdatei 'cs2test1.cs2' benutzt
     For i = 0 To 255
-      j    = (j + S(i) + S2(i)) % 256
+      j = (j + S(i) + S2(i)) % 256
       Swap S(i), S(j)
     Next
   Next
@@ -97,7 +97,7 @@ Procedure encrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
     i = (i + 1) % 256
     j = (j + S(i)) % 256
     Swap S(i), S(j)
-    n         = (S(i) + S(j)) % 256
+    n = (S(i) + S(j)) % 256
     *output\a = *input\a ! S(n)
     *input + 1
     *output + 1
@@ -160,7 +160,7 @@ Procedure decrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
     i = (i + 1) % 256
     j = (j + S(i)) % 256
     Swap S(i), S(j)
-    n         = (S(i) + S(j)) % 256
+    n = (S(i) + S(j)) % 256
     *output\a = *input\a ! S(n)
     *input + 1
     *output + 1
@@ -195,7 +195,7 @@ For i = 0 To argc
   ElseIf ProgramParameter(i) = "-d"
     decrypt = 1
   ElseIf ProgramParameter(i) = "-r"
-    i      = i + 1
+    i = i + 1
     rounds = Val(ProgramParameter(i))
   EndIf
 Next
@@ -206,10 +206,10 @@ Next
 CompilerSelect #PB_Compiler_OS
   CompilerCase #PB_OS_MacOS
   *passbuf = AllocateMemory(250)
-  *key     = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+  *key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
   CompilerCase #PB_OS_Linux
   ; *passbuf = AllocateMemory(250)
-  ; *key     = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
+  ; *key = readpassphrase("Passphrase? ", *passbuf, MemorySize(*passbuf), 0)
   *key = getpass("Passphrase? ")
 CompilerEndSelect
 
@@ -222,7 +222,7 @@ ConsoleError("rounds = " + Str(rounds))
 ; --------------------- read input from stdin
 Define TotalSize  = 0
 Define BufferFree = 10000
-Define *Buffer    = AllocateMemory(BufferFree)
+Define *Buffer = AllocateMemory(BufferFree)
 
 Repeat
   ReadSize = ReadConsoleData(*Buffer + TotalSize, BufferFree) ; read a block of data
@@ -230,7 +230,7 @@ Repeat
   BufferFree - ReadSize
   If BufferFree < 100  ; resize the buffer if it is not large enough
     BufferFree = 10000
-    *Buffer    = ReAllocateMemory(*Buffer, TotalSize + 10000)
+    *Buffer = ReAllocateMemory(*Buffer, TotalSize + 10000)
   EndIf
 Until ReadSize = 0 ; once 0 is returned, there is nothing else to read
 ; --------------------- read input from stdin
