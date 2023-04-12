@@ -1,9 +1,9 @@
-﻿; ==============================================================
+; ==============================================================
 ; Created on:         20.10.2015
-; App/Lib-Name:       ciphersaber
+; App/Lib-Name:       ciphersaberB64
 ; Author:             Niklas Hennigs
-; Version:            0.2
-; Compiler:           PureBasic 5.40 LTS (MacOS X - x64)
+; Version:            0.3
+; Compiler:           PureBasic 6.01 LTS - C Backend (Linux - arm32)
 ; ==============================================================
 
 Macro ciphersaber
@@ -19,11 +19,10 @@ Procedure usage()
   PrintN("  -a          ASCII armor (Base64).")
   PrintN("  -d          Decrypt [Default: Encrypt].")
   PrintN("  -r rounds   Repetitons of state array mixing loop [Default: 20].")
-  PrintN("  key         Encryption key. Use seven diceware words for 90 bits of entropy.")
+  PrintN("  key         Encryption key.")
   PrintN("")
   PrintN("See:")
   PrintN("  http://ciphersaber.gurus.org/faq.html")
-  PrintN("  http://diceware.com")
 EndProcedure
 
 
@@ -68,7 +67,7 @@ Procedure encrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
   j = 0
   For n = 1 To rounds ; 20 ist Standardwert von Ciphersaber-2, 10 wurde für die Testdatei 'cs2test1.cs2' benutzt
     For i = 0 To 255
-      j    = (j + S(i) + S2(i)) % 256
+      j = (j + S(i) + S2(i)) % 256
       Swap S(i), S(j)
     Next
   Next
@@ -82,7 +81,7 @@ Procedure encrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
     i = (i + 1) % 256
     j = (j + S(i)) % 256
     Swap S(i), S(j)
-    n         = (S(i) + S(j)) % 256
+    n = (S(i) + S(j)) % 256
     *output\a = *input\a ! S(n)
     *input + 1
     *output + 1
@@ -141,17 +140,46 @@ Procedure decrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
   i = 0
   n = 0
 
-  While inputLen
+  While inputLen - 10
     i = (i + 1) % 256
     j = (j + S(i)) % 256
     Swap S(i), S(j)
-    n         = (S(i) + S(j)) % 256
+    n = (S(i) + S(j)) % 256
     *output\a = *input\a ! S(n)
     *input + 1
     *output + 1
     inputLen - 1
   Wend
+EndProcedure
 
+Procedure.s SplitTextIntoEvenLines(text$, length.i=64)
+; https://www.purebasic.fr/english/viewtopic.php?p=542434#p542434 
+  Protected *in, *out, Result$, ByteLength.i, CRLFSize.i, *outHelp, *outEnd
+ 
+ 
+  ByteLength = length * SizeOf(Character)
+  CRLFSize = 2 * SizeOf(Character)
+  *in = @text$
+  *out = AllocateMemory(StringByteLength(text$) + (Len(text$) / length) * CRLFSize, #PB_Memory_NoClear)
+  If *out
+    *outHelp = *out
+    *outEnd = *out + MemorySize(*out)
+    While *outHelp + ByteLength < *outEnd
+      CopyMemory(*in, *outHelp, ByteLength)
+      *in + ByteLength
+      *outHelp + ByteLength
+      PokeS(*outHelp, #CRLF$, -1, #PB_String_NoZero)
+      *outHelp + CRLFSize
+    Wend
+    If *outHelp < *outEnd
+      CopyMemory(*in, *outHelp, *outEnd - *outHelp)
+    EndIf
+    Result$ = PeekS(*out, MemorySize(*out) / SizeOf(Character))
+    FreeMemory(*out)
+  EndIf
+ 
+  ProcedureReturn Result$
+ 
 EndProcedure
 
 
@@ -177,7 +205,7 @@ For i = 0 To argc
   ElseIf ProgramParameter(i) = "-d"
     decrypt = 1
   ElseIf ProgramParameter(i) = "-r"
-    i      = i + 1
+    i = i + 1
     rounds = Val(ProgramParameter(i))
   ElseIf key = ""
     key = ProgramParameter(i)
@@ -185,12 +213,12 @@ For i = 0 To argc
 Next
 
 
-*key        = AllocateMemory(Len(key))
+*key = AllocateMemory(Len(key))
 PokeS(*key, key, -1, #PB_Ascii | #PB_String_NoZero)
 
-ConsoleError("rounds = " + Str(rounds))
+;ConsoleError("rounds = " + Str(rounds))
 
-;-----read input from stdin-----
+;- Read input from stdin
 Define TotalSize  = 0
 Define BufferFree = 10000
 Define *Buffer    = AllocateMemory(BufferFree)
@@ -201,48 +229,67 @@ Repeat
   BufferFree - ReadSize
   If BufferFree < 100  ; resize the buffer if it is not large enough
     BufferFree = 10000
-    *Buffer    = ReAllocateMemory(*Buffer, TotalSize + 10000)
+    *Buffer = ReAllocateMemory(*Buffer, TotalSize + 10000)
   EndIf
 Until ReadSize = 0 ; once 0 is returned, there is nothing else to read
-;-----read input from stdin-----
+;END Read input from stdin
 
 If TotalSize > 0
-  Define length            = TotalSize
-  Define *input            = *Buffer
-  Define *output
-  Define *b64output
+  Define length = TotalSize
+  Define *input = *Buffer
+  Define *output, *b64output, *DecodeBuffer
+  Define b64Size, b64DecSize 
 
   If decrypt
-    *output = AllocateMemory(length - 10)
     If armored
-      *output      = AllocateMemory(length - 10)
-      Define *temp = AllocateMemory(MemorySize(*input))
-      Base64Decoder(*input, length, *temp, length)
-      CopyMemory(*temp, *input, length)
-      decrypt(*input, (length), *output, *key, Len(key), rounds)
+      *DecodeBuffer = AllocateMemory(length * 0.75)
+
+      Enumeration RegEx
+        #StripWhitepsace
+        #TestValidBase64
+      EndEnumeration
+
+      CreateRegularExpression(#TestValidBase64, "^\s*(?:(?:[A-Za-z0-9+/]{4})+\s*)*[A-Za-z0-9+/]*={0,2}\s*$") ; https://stackoverflow.com/a/18661859
+      CreateRegularExpression(#StripWhitepsace, "\s+")
+  
+      Define.s Eingabe = PeekS(*Buffer, -1, #PB_ASCII)
+
+      If MatchRegularExpression(#TestValidBase64, Eingabe)
+        Eingabe = ReplaceRegularExpression(#StripWhitepsace, Eingabe, "")
+        PokeS(*input, Eingabe, StringByteLength(Eingabe, #PB_Ascii), #PB_Ascii|#PB_String_NoZero)
+        b64DecSize = Base64DecoderBuffer(*input, StringByteLength(Eingabe, #PB_Ascii), *DecodeBuffer, MemorySize(*DecodeBuffer))
+        *output = AllocateMemory(b64DecSize - 10) ; -10 because of IV
+        decrypt(*DecodeBuffer, b64DecSize, *output, *key, Len(key), rounds)
+      Else
+        ConsoleError("Input is not a valid Base64 string!")
+        CloseConsole()
+        End 1
+      EndIf
     Else
-      decrypt(*input, (length), *output, *key, Len(key), rounds)
+      *output = AllocateMemory(length - 10)
+      decrypt(*input, length, *output, *key, Len(key), rounds)
     EndIf
     WriteConsoleData(*output, MemorySize(*output))
-  Else
+  Else ; encrypt
     *output = AllocateMemory(length + 10)
     encrypt(*input, length, *output, *key, Len(key), rounds)
     If armored
-      *b64output = AllocateMemory(MemorySize(*output)*1.35)
-      Base64Encoder(*output, MemorySize(*output), *b64output, MemorySize(*b64output))
-      WriteConsoleData(*b64output, MemorySize(*b64output))
+      Define.s b64out = Base64Encoder(*output, MemorySize(*output))
+      PrintN(SplitTextIntoEvenLines(b64out))
     Else
       WriteConsoleData(*output, MemorySize(*output))
     EndIf
   EndIf
 EndIf
-; IDE Options = PureBasic 5.40 LTS (MacOS X - x64)
+; IDE Options = PureBasic 6.01 LTS - C Backend (Linux - arm32)
 ; ExecutableFormat = Console
-; CursorPosition = 25
-; FirstLine = 8
+; CursorPosition = 198
+; FirstLine = 196
 ; Folding = -
-; EnableUnicode
 ; EnableXP
-; Executable = ../../bin/ciphersaber64
+; DPIAware
+; Executable = ciphersaberB64
 ; CompileSourceDirectory
-; Debugger = IDE
+; Debugger = Standalone
+; Watchlist = InsertLineBreakAfterCharCount()>sOutput;InsertLineBreakAfterCharCount()>sInput
+; Watchlist = InsertLineBreakAfterCharCount()>iCurrentCharCount
