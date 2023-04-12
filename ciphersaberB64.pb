@@ -156,7 +156,6 @@ Procedure.s SplitTextIntoEvenLines(text$, length.i=64)
 ; https://www.purebasic.fr/english/viewtopic.php?p=542434#p542434 
   Protected *in, *out, Result$, ByteLength.i, CRLFSize.i, *outHelp, *outEnd
  
- 
   ByteLength = length * SizeOf(Character)
   CRLFSize = 2 * SizeOf(Character)
   *in = @text$
@@ -179,7 +178,6 @@ Procedure.s SplitTextIntoEvenLines(text$, length.i=64)
   EndIf
  
   ProcedureReturn Result$
- 
 EndProcedure
 
 
@@ -281,15 +279,3 @@ If TotalSize > 0
     EndIf
   EndIf
 EndIf
-; IDE Options = PureBasic 6.01 LTS - C Backend (Linux - arm32)
-; ExecutableFormat = Console
-; CursorPosition = 198
-; FirstLine = 196
-; Folding = -
-; EnableXP
-; DPIAware
-; Executable = ciphersaberB64
-; CompileSourceDirectory
-; Debugger = Standalone
-; Watchlist = InsertLineBreakAfterCharCount()>sOutput;InsertLineBreakAfterCharCount()>sInput
-; Watchlist = InsertLineBreakAfterCharCount()>iCurrentCharCount
