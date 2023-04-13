@@ -152,12 +152,21 @@ Procedure decrypt(*input.Ascii, inputLen, *output.Ascii, *key.Ascii, keyLen, rou
   Wend
 EndProcedure
 
+
 Procedure.s SplitTextIntoEvenLines(text$, length.i=64)
 ; https://www.purebasic.fr/english/viewtopic.php?p=542434#p542434 
   Protected *in, *out, Result$, ByteLength.i, CRLFSize.i, *outHelp, *outEnd
- 
+  
+  CompilerSelect #PB_Compiler_OS
+    CompilerCase #PB_OS_Windows
+      #NEWLINE = #CRLF$
+      CRLFSize = 2 * SizeOf(Character)
+    CompilerDefault
+      #NEWLINE = #LF$
+      CRLFSize = SizeOf(Character)
+   CompilerEndSelect
+
   ByteLength = length * SizeOf(Character)
-  CRLFSize = 2 * SizeOf(Character)
   *in = @text$
   *out = AllocateMemory(StringByteLength(text$) + (Len(text$) / length) * CRLFSize, #PB_Memory_NoClear)
   If *out
@@ -167,7 +176,7 @@ Procedure.s SplitTextIntoEvenLines(text$, length.i=64)
       CopyMemory(*in, *outHelp, ByteLength)
       *in + ByteLength
       *outHelp + ByteLength
-      PokeS(*outHelp, #CRLF$, -1, #PB_String_NoZero)
+      PokeS(*outHelp, #NEWLINE, -1, #PB_String_NoZero)
       *outHelp + CRLFSize
     Wend
     If *outHelp < *outEnd
